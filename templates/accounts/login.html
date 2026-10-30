@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}ចូលប្រើប្រព័ន្ធ - {{ SHOP_NAME_KH }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full bg-white p-8 rounded-3xl border border-slate-200/80 shadow-xl space-y-6">
+        <div class="text-center">
+            <div class="w-14 h-14 bg-brand-600 text-white rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-lg mb-3">
+                <i class="fa-solid fa-soap"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-900">{{ SHOP_NAME_KH }}</h2>
+            <p class="text-xs text-slate-500 font-medium">ចូលប្រើប្រាស់ផ្ទាំងគ្រប់គ្រង POS ហាងបោកអ៊ុត</p>
+        </div>
+
+        {% if form.errors %}
+        <div class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-xs font-semibold">
+            ឈ្មោះអ្នកប្រើ ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវឡើយ។
+        </div>
+        {% endif %}
+
+        <form class="space-y-4" method="post" action="{% url 'accounts:login' %}">
+            {% csrf_token %}
+            <div>
+                <label for="username" class="block text-xs font-semibold text-slate-700 mb-1">ឈ្មោះអ្នកប្រើ (Username)</label>
+                <input id="username" name="username" type="text" required class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            </div>
+
+            <div>
+                <label for="password" class="block text-xs font-semibold text-slate-700 mb-1">ពាក្យសម្ងាត់ (Password)</label>
+                <input id="password" name="password" type="password" required class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            </div>
+
+            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-xl font-bold text-sm shadow-md transition">
+                ចូលប្រើ (Log In)
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

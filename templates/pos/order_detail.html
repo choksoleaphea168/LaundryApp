@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+
+{% block title %}ព័ត៌មានលម្អិត Order {{ order.order_code }} - {{ SHOP_NAME_KH }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Top Breadcrumb & Action bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <a href="{% url 'pos:dashboard' %}" class="text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center mb-1">
+                <i class="fa-solid fa-arrow-left mr-1"></i> ត្រឡប់ទៅកាន់ Dashboard
+            </a>
+            <h2 class="text-2xl font-bold text-slate-900 flex items-center">
+                <span>{{ order.order_code }}</span>
+                {% if order.is_express %}
+                <span class="ml-2 bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded-full">
+                    <i class="fa-solid fa-bolt mr-1"></i> សេវាប្រញាប់
+                </span>
+                {% endif %}
+            </h2>
+            <p class="text-xs text-slate-500">បង្កើតឡើងនៅថ្ងៃ {{ order.created_at|date:"d/m/Y H:i" }}</p>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <a href="{% url 'pos:thermal_receipt' order.id %}" target="_blank" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center">
+                <i class="fa-solid fa-receipt mr-1.5 text-brand-600"></i> បោះពុម្ពវិក្កយបត្រ
+            </a>
+            <a href="{% url 'pos:thermal_tag' order.id %}" target="_blank" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center">
+                <i class="fa-solid fa-tag mr-1.5 text-amber-600"></i> បោះពុម្ពស្លាក Tag
+            </a>
+        </div>
+    </div>
+
+    <!-- Status & Progress Stepper -->
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <h3 class="text-xs font-bold text-slate-500 uppercase mb-4">ដំណើរការបច្ចុប្បន្ន (Current Status)</h3>
+        
+        <div class="flex items-center justify-between overflow-x-auto pb-2 text-xs font-semibold">
+            <span class="px-3 py-1.5 rounded-xl {% if order.status == 'RECEIVED' %}bg-brand-600 text-white font-bold{% else %}bg-slate-100 text-slate-600{% endif %}">1. ទទួល</span>
+            <i class="fa-solid fa-chevron-right text-slate-300 mx-1"></i>
+            <span class="px-3 py-1.5 rounded-xl {% if order.status == 'WASHING' %}bg-blue-600 text-white font-bold{% else %}bg-slate-100 text-slate-600{% endif %}">2. កំពុងបោក</span>
+            <i class="fa-solid fa-chevron-right text-slate-300 mx-1"></i>
+            <span class="px-3 py-1.5 rounded-xl {% if order.status == 'DRYING' %}bg-amber-600 text-white font-bold{% else %}bg-slate-100 text-slate-600{% endif %}">3. កំពុងសម្ងួត</span>
+            <i class="fa-solid fa-chevron-right text-slate-300 mx-1"></i>
+            <span class="px-3 py-1.5 rounded-xl {% if order.status == 'IRONING' %}bg-indigo-600 text-white font-bold{% else %}bg-slate-100 text-slate-600{% endif %}">4. កំពុងអ៊ុត</span>
+            <i class="fa-solid fa-chevron-right text-slate-300 mx-1"></i>
+            <span class="px-3 py-1.5 rounded-xl {% if order.status == 'READY' %}bg-emerald-600 text-white font-bold{% else %}bg-slate-100 text-slate-600{% endif %}">5. រួចរាល់</span>
+            <i class="fa-solid fa-chevron-right text-slate-300 mx-1"></i>
+            <span class="px-3 py-1.5 rounded-xl {% if order.status == 'COMPLETED' %}bg-slate-800 text-white font-bold{% else %}bg-slate-100 text-slate-600{% endif %}">6. បានប្រគល់</span>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs text-slate-500">ផ្លាស់ប្ដូរដំណាក់កាលដោយផ្ទាល់៖</span>
+            <div class="flex items-center space-x-2">
+                <select id="directStatusSelect" class="text-xs px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg">
+                    {% for code, label in order.Status.choices %}
+                    <option value="{{ code }}" {% if order.status == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" onclick="changeStatusDirectly()" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
+                    ផ្លាស់ប្ដូរ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2 Column Details: Customer & Items -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Left 2 Cols: Items & Charges -->
+        <div class="md:col-span-2 space-y-6">
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm">
+                <h3 class="text-sm font-bold text-slate-900 mb-3 flex items-center">
+                    <i class="fa-solid fa-list-check mr-2 text-brand-600"></i>
+                    បញ្ជីមុខទំនិញបោកអ៊ុត (Laundry Items)
+                </h3>
+                <div class="divide-y divide-slate-100">
+                    {% for item in order.items.all %}
+                    <div class="py-3 flex justify-between items-center text-sm">
+                        <div>
+                            <p class="font-bold text-slate-800">{{ item.service.name_kh|default:item.service.name }}</p>
+                            <p class="text-xs text-slate-500">
+                                {{ item.quantity }} {% if item.service.unit_type == 'PER_KG' %}KG{% else %}Pcs{% endif %} &times; ${{ item.unit_price_usd|floatformat:2 }}
+                                {% if item.item_notes %}&bull; <span class="italic text-slate-400">{{ item.item_notes }}</span>{% endif %}
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-bold text-slate-900">${{ item.subtotal_usd|floatformat:2 }}</span>
+                            <span class="text-xs text-slate-500 block">{{ item.subtotal_khr|floatformat:0 }} ៛</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-slate-200 space-y-2 text-sm">
+                    <div class="flex justify-between text-slate-600">
+                        <span>ចំនួនស្បោងសរុប (Bag Count):</span>
+                        <span class="font-bold text-slate-800">{{ order.bag_count }} កញ្ចប់</span>
+                    </div>
+                    <div class="flex justify-between text-slate-900 font-bold text-base pt-2 border-t border-slate-100">
+                        <span>សរុបទាំងអស់ (Grand Total):</span>
+                        <div class="text-right">
+                            <span>${{ order.total_usd|floatformat:2 }}</span>
+                            <span class="text-xs text-slate-500 block font-normal">({{ order.total_khr|floatformat:0 }} ៛)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right 1 Col: Customer & Payment Action -->
+        <div class="space-y-6">
+            <!-- Customer Card -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm">
+                <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center">
+                    <i class="fa-solid fa-user mr-1.5 text-brand-600"></i>
+                    ព័ត៌មានអតិថិជន
+                </h3>
+                <p class="text-base font-bold text-slate-900">{{ order.customer.name }}</p>
+                <p class="text-sm font-semibold text-brand-700 mt-1"><i class="fa-solid fa-phone text-xs mr-1"></i>{{ order.customer.phone }}</p>
+                {% if order.notes %}
+                <div class="mt-3 bg-amber-50 p-2.5 rounded-xl border border-amber-200/70 text-xs text-amber-900">
+                    <b>ចំណាំ:</b> {{ order.notes }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Payment Summary & Record Payment -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm">
+                <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center">
+                    <i class="fa-solid fa-credit-card mr-1.5 text-brand-600"></i>
+                    ស្ថានភាពការទូទាត់
+                </h3>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">ស្ថានភាព:</span>
+                        <span class="font-bold px-2 py-0.5 rounded-full {% if order.payment_status == 'PAID' %}bg-emerald-100 text-emerald-800{% else %}bg-amber-100 text-amber-800{% endif %}">
+                            {{ order.get_payment_status_display }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">បានបង់រួច:</span>
+                        <span class="font-bold text-slate-900">${{ order.paid_amount_usd|floatformat:2 }} ({{ order.paid_amount_khr|floatformat:0 }} ៛)</span>
+                    </div>
+                    <div class="flex justify-between text-sm font-bold pt-2 border-t border-slate-100">
+                        <span class="text-rose-600">នៅខ្វះ (Balance Due):</span>
+                        <span class="text-rose-600">${{ order.balance_due_usd|floatformat:2 }} ({{ order.balance_due_khr|floatformat:0 }} ៛)</span>
+                    </div>
+                </div>
+
+                {% if order.balance_due_usd > 0 %}
+                <div class="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                    <label class="block text-xs font-semibold text-slate-600">កត់ត្រាការបង់ប្រាក់បន្ថែម ($ USD)</label>
+                    <input type="number" step="0.01" id="recPayAmount" value="{{ order.balance_due_usd|floatformat:2 }}" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none">
+                    <select id="recPayMethod" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-none">
+                        <option value="CASH">សាច់ប្រាក់ (Cash)</option>
+                        <option value="KHQR">KHQR / Bakong Scan</option>
+                        <option value="TRANSFER">ផ្ទេរធនាគារ (Transfer)</option>
+                    </select>
+                    <button type="button" onclick="recordPayment()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-sm">
+                        <i class="fa-solid fa-check-circle mr-1"></i> កត់ត្រាការបង់ប្រាក់
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    async function changeStatusDirectly() {
+        const nextStatus = document.getElementById('directStatusSelect').value;
+        try {
+            const resp = await fetch("{% url 'pos:update_status' order.id %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ status: nextStatus })
+            });
+            const data = await resp.json();
+            if (data.status === 'success') {
+                window.location.reload();
+            }
+        } catch(e) {
+            alert('កំហុស៖ ' + e);
+        }
+    }
+
+    async function recordPayment() {
+        const amount = parseFloat(document.getElementById('recPayAmount').value || 0);
+        const method = document.getElementById('recPayMethod').value;
+        if (amount <= 0) {
+            alert('សូមបញ្ចូលចំនួនទឹកប្រាក់ត្រឹមត្រូវ / Invalid amount');
+            return;
+        }
+
+        try {
+            const resp = await fetch("{% url 'pos:record_payment' order.id %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    amount_usd: amount,
+                    payment_method: method
+                })
+            });
+            const data = await resp.json();
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert('កំហុស៖ ' + data.message);
+            }
+        } catch(e) {
+            alert('កំហុស៖ ' + e);
+        }
+    }
+</script>
+{% endblock %}

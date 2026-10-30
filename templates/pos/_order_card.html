@@ -1,0 +1,73 @@
+<div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm hover:shadow transition relative flex flex-col justify-between">
+    <!-- Top Card Header -->
+    <div class="flex items-start justify-between mb-2">
+        <div>
+            <div class="flex items-center space-x-1.5">
+                <span class="font-bold text-xs text-brand-700 tracking-tight">{{ order.order_code }}</span>
+                {% if order.is_express %}
+                <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center">
+                    <i class="fa-solid fa-bolt mr-0.5"></i> ប្រញាប់
+                </span>
+                {% endif %}
+            </div>
+            <p class="font-bold text-sm text-slate-900 mt-0.5">{{ order.customer.name }}</p>
+            <p class="text-xs text-slate-500 font-medium"><i class="fa-solid fa-phone text-[10px] mr-1"></i>{{ order.customer.phone }}</p>
+        </div>
+        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full 
+            {% if order.payment_status == 'PAID' %}bg-emerald-100 text-emerald-800
+            {% elif order.payment_status == 'PARTIAL' %}bg-amber-100 text-amber-800
+            {% else %}bg-rose-100 text-rose-800{% endif %}">
+            {{ order.get_payment_status_display }}
+        </span>
+    </div>
+
+    <!-- Items Preview -->
+    <div class="bg-slate-50 rounded-xl p-2 my-2 text-xs space-y-1 text-slate-600 border border-slate-100">
+        {% for item in order.items.all %}
+        <div class="flex justify-between items-center text-[11px]">
+            <span class="truncate max-w-[140px]">{{ item.service.name_kh|default:item.service.name }}</span>
+            <span class="font-bold text-slate-800">
+                {{ item.quantity }}{% if item.service.unit_type == 'PER_KG' %}kg{% else %}pcs{% endif %}
+            </span>
+        </div>
+        {% endfor %}
+        <div class="flex justify-between items-center text-[11px] text-slate-400 pt-1 border-t border-slate-200/60">
+            <span>ចំនួនស្បោង:</span>
+            <span class="font-semibold text-slate-700">{{ order.bag_count }} កញ្ចប់</span>
+        </div>
+    </div>
+
+    <!-- Price Section -->
+    <div class="flex items-baseline justify-between mb-3 text-xs">
+        <span class="text-slate-500">សរុប:</span>
+        <div class="text-right">
+            <span class="font-bold text-slate-900 text-sm">${{ order.total_usd|floatformat:2 }}</span>
+            <span class="text-[10px] text-slate-500 block">({{ order.total_khr|floatformat:0 }} ៛)</span>
+        </div>
+    </div>
+
+    <!-- Actions Toolbar -->
+    <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+        <div class="flex items-center space-x-1">
+            <!-- Print Receipt -->
+            <a href="{% url 'pos:thermal_receipt' order.id %}" target="_blank" title="បោះពុម្ពវិក្កយបត្រ (Print Receipt)" class="w-7 h-7 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-slate-100 flex items-center justify-center text-xs transition">
+                <i class="fa-solid fa-receipt"></i>
+            </a>
+            <!-- Print Laundry Tag -->
+            <a href="{% url 'pos:thermal_tag' order.id %}" target="_blank" title="បោះពុម្ពស្លាកសម្គាល់ (Print Bag Tag)" class="w-7 h-7 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-slate-100 flex items-center justify-center text-xs transition">
+                <i class="fa-solid fa-tag"></i>
+            </a>
+            <!-- View Detail -->
+            <a href="{% url 'pos:order_detail' order.id %}" title="មើលលម្អិត (View Detail)" class="w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 flex items-center justify-center text-xs transition">
+                <i class="fa-solid fa-eye"></i>
+            </a>
+        </div>
+
+        <!-- 1-Click Advance Status -->
+        {% if next_status %}
+        <button type="button" onclick="advanceOrderStatus({{ order.id }}, '{{ next_status }}')" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition flex items-center">
+            <span>{{ next_label }}</span>
+        </button>
+        {% endif %}
+    </div>
+</div>

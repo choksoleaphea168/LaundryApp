@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ SHOP_NAME_KH }} - POS Dashboard{% endblock %}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Kantumruy Pro"', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Kantumruy Pro & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kantumruy+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: 'Kantumruy Pro', 'Inter', sans-serif; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Shop Brand -->
+                <div class="flex items-center space-x-3">
+                    <a href="{% url 'pos:dashboard' %}" class="flex items-center space-x-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center text-xl shadow-md group-hover:bg-brand-700 transition">
+                            <i class="fa-solid fa-soap"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold text-slate-900 leading-tight">{{ SHOP_NAME_KH }}</h1>
+                            <p class="text-xs text-slate-500 font-medium">{{ SHOP_NAME }} • POS Local</p>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Currency Exchange & Actions -->
+                <div class="flex items-center space-x-3 sm:space-x-4">
+                    <!-- Live Rate Badge -->
+                    <div class="hidden sm:flex items-center bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold">
+                        <i class="fa-solid fa-money-bill-transfer mr-1.5 text-emerald-600"></i>
+                        <span>1 USD = {{ EXCHANGE_RATE|floatformat:0 }} ៛</span>
+                    </div>
+
+                    <!-- New Order Button -->
+                    <button type="button" onclick="openNewOrderModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center shadow-sm transition hover:shadow">
+                        <i class="fa-solid fa-plus-circle mr-2 text-base"></i>
+                        <span>Order ថ្មី</span>
+                    </button>
+
+                    <!-- User / Admin Link -->
+                    <div class="flex items-center space-x-2 pl-2 border-l border-slate-200 text-sm">
+                        <a href="/admin/" target="_blank" title="Django Admin" class="p-2 text-slate-500 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition">
+                            <i class="fa-solid fa-sliders"></i>
+                        </a>
+                        {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'accounts:logout' %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" title="ចាកចេញ (Logout)" class="p-2 text-slate-500 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition">
+                                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500">
+        <p>{{ SHOP_NAME_KH }} ({{ SHOP_NAME }}) &bull; {{ SHOP_PHONE }} &bull; {{ SHOP_ADDRESS_KH }}</p>
+    </footer>
+
+    {% block modals %}{% endblock %}
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

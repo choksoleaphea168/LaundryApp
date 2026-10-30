@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt - {{ order.order_code }}</title>
+    <!-- Google Fonts: Kantumruy Pro -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        @page {
+            size: 80mm auto;
+            margin: 0;
+        }
+        body {
+            font-family: 'Kantumruy Pro', 'Courier New', monospace, sans-serif;
+            width: 76mm;
+            margin: 0 auto;
+            padding: 4mm 2mm;
+            color: #000;
+            background: #fff;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        .bold { font-weight: 700; }
+        .divider {
+            border-top: 1px dashed #000;
+            margin: 6px 0;
+        }
+        .divider-double {
+            border-top: 2px solid #000;
+            margin: 6px 0;
+        }
+        .header h1 {
+            font-size: 16px;
+            margin: 0 0 2px 0;
+            font-weight: 700;
+        }
+        .header p {
+            margin: 1px 0;
+            font-size: 11px;
+        }
+        .order-badge {
+            font-size: 14px;
+            font-weight: bold;
+            border: 1px solid #000;
+            padding: 3px 6px;
+            display: inline-block;
+            margin: 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        th {
+            border-bottom: 1px solid #000;
+            padding: 3px 0;
+            text-align: left;
+        }
+        td {
+            padding: 3px 0;
+            vertical-align: top;
+        }
+        .row-total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            padding: 2px 0;
+        }
+        .grand-total {
+            font-size: 15px;
+            font-weight: bold;
+        }
+        .no-print {
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .btn-print {
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            padding: 6px 16px;
+            font-size: 13px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        @media print {
+            .no-print { display: none; }
+            body { padding: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body onload="window.print()">
+
+    <!-- Manual Print Toolbar for on-screen view -->
+    <div class="no-print">
+        <button onclick="window.print()" class="btn-print">🖨️ បោះពុម្ពវិក្កយបត្រ (Print)</button>
+        <button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:6px 12px;font-size:13px;border-radius:6px;cursor:pointer;margin-left:8px;">បិទ (Close)</button>
+    </div>
+
+    <!-- Shop Header -->
+    <div class="header text-center">
+        <h1>{{ SHOP_NAME_KH }}</h1>
+        <p class="bold">{{ SHOP_NAME }}</p>
+        <p>ទូរស័ព្ទ៖ {{ SHOP_PHONE }}</p>
+        <p>{{ SHOP_ADDRESS_KH }}</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Order Info -->
+    <div class="text-center">
+        <div class="order-badge">{{ order.order_code }}</div>
+        <p style="font-size: 11px; margin: 2px 0;">កាលបរិច្ឆេទ: {{ order.created_at|date:"d/m/Y H:i" }}</p>
+        {% if order.is_express %}
+        <p class="bold" style="font-size: 12px; margin: 2px 0;">⚡ [សេវាបន្ទាន់ / EXPRESS SERVICE]</p>
+        {% endif %}
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Customer Details -->
+    <div>
+        <p style="margin: 2px 0;"><b>អតិថិជន:</b> {{ order.customer.name }}</p>
+        <p style="margin: 2px 0;"><b>លេខទូរស័ព្ទ:</b> {{ order.customer.phone }}</p>
+        <p style="margin: 2px 0;"><b>ចំនួនស្បោង:</b> {{ order.bag_count }} កញ្ចប់</p>
+        {% if order.notes %}
+        <p style="margin: 2px 0;"><b>ចំណាំ:</b> {{ order.notes }}</p>
+        {% endif %}
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Itemized Services Table -->
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 50%;">មុខទំនិញ (Item)</th>
+                <th style="width: 25%; text-align: center;">ចំនួន (Qty)</th>
+                <th style="width: 25%; text-align: right;">តម្លៃ ($)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>
+                    <b>{{ item.service.name_kh|default:item.service.name }}</b>
+                    {% if item.item_notes %}<br><small style="color:#444;">- {{ item.item_notes }}</small>{% endif %}
+                </td>
+                <td style="text-align: center;">
+                    {{ item.quantity }}{% if item.service.unit_type == 'PER_KG' %}kg{% else %}pcs{% endif %}
+                </td>
+                <td style="text-align: right;">${{ item.subtotal_usd|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="divider-double"></div>
+
+    <!-- Totals & Balances -->
+    <div>
+        <div class="row-total grand-total">
+            <span>សរុប (Total USD):</span>
+            <span>${{ order.total_usd|floatformat:2 }}</span>
+        </div>
+        <div class="row-total grand-total">
+            <span>សរុបជារៀល (Total KHR):</span>
+            <span>{{ order.total_khr|floatformat:0 }} ៛</span>
+        </div>
+        <div class="divider"></div>
+        <div class="row-total">
+            <span>បានបង់ (Paid):</span>
+            <span>${{ order.paid_amount_usd|floatformat:2 }} ({{ order.paid_amount_khr|floatformat:0 }} ៛)</span>
+        </div>
+        <div class="row-total">
+            <span>វិធីទូទាត់:</span>
+            <span>{{ order.get_payment_method_display }}</span>
+        </div>
+        {% if order.balance_due_usd > 0 %}
+        <div class="row-total bold" style="color: #b91c1c; font-size: 13px;">
+            <span>នៅខ្វះ (Balance Due):</span>
+            <span>${{ order.balance_due_usd|floatformat:2 }} ({{ order.balance_due_khr|floatformat:0 }} ៛)</span>
+        </div>
+        {% else %}
+        <div class="row-total bold" style="color: #15803d;">
+            <span>ស្ថានភាព:</span>
+            <span>ទូទាត់រួចរាល់ (PAID IN FULL)</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Tracking QR Code & Footer Note -->
+    <div class="text-center" style="margin-top: 8px;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data={{ order.order_code }}" alt="QR Tracking" style="width: 85px; height: 85px; margin: 0 auto; display: block;">
+        <p style="font-size: 10px; margin-top: 4px;">ស្កេនពិនិត្យដំណាក់កាលខោអាវ / Scan to Track</p>
+        <p style="font-size: 11px; margin-top: 8px;" class="bold">សូមអរគុណសម្រាប់ការគាំទ្រ!</p>
+        <p style="font-size: 10px; color: #444;">សូមពិនិត្យខោអាវ និងចំនួនមុនពេលចាកចេញ។ លើសពី ៣០ថ្ងៃ ហាងមិនទទួលខុសត្រូវឡើយ។</p>
+    </div>
+
+</body>
+</html>
