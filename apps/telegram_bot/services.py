@@ -17,7 +17,7 @@ def send_telegram_message(chat_id: str, message: str) -> bool:
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
-        'chat_id': chat_id,
+        'chat_id': str(chat_id),
         'text': message,
         'parse_mode': 'HTML',
         'disable_web_page_preview': True
@@ -36,10 +36,57 @@ def send_telegram_message(chat_id: str, message: str) -> bool:
         return False
 
 
+def get_all_recipient_chat_ids() -> list:
+    """Returns a unique list of active Telegram chat IDs."""
+    chat_ids = set()
+    env_chat_id = getattr(settings, 'TELEGRAM_OWNER_CHAT_ID', '')
+    if env_chat_id:
+        chat_ids.add(str(env_chat_id).strip())
+
+    try:
+        from .models import TelegramRecipient
+        db_chat_ids = TelegramRecipient.objects.filter(is_active=True).values_list('chat_id', flat=True)
+        for cid in db_chat_ids:
+            if cid:
+                chat_ids.add(str(cid).strip())
+    except Exception as e:
+        logger.debug(f"Could not load recipients from DB: {e}")
+
+    return list(chat_ids)
+
+
+def register_or_update_recipient(chat_id: str, first_name: str = "", username: str = ""):
+    """Registers or activates a chat_id in the database."""
+    try:
+        from .models import TelegramRecipient
+        recipient, created = TelegramRecipient.objects.update_or_create(
+            chat_id=str(chat_id),
+            defaults={
+                'first_name': first_name or "",
+                'username': username or "",
+                'is_active': True,
+            }
+        )
+        return recipient
+    except Exception as e:
+        logger.error(f"Error registering recipient {chat_id}: {e}")
+        return None
+
+
+def broadcast_message_to_recipients(message: str) -> int:
+    """Broadcasts a message to all registered recipients and returns the success count."""
+    chat_ids = get_all_recipient_chat_ids()
+    sent_count = 0
+    for cid in chat_ids:
+        if send_telegram_message(cid, message):
+            sent_count += 1
+    return sent_count
+
+
 def notify_owner_new_order(order):
     """Notify store owner about a newly registered laundry order."""
-    owner_chat_id = getattr(settings, 'TELEGRAM_OWNER_CHAT_ID', '')
-    if not owner_chat_id:
+    chat_ids = get_all_recipient_chat_ids()
+    if not chat_ids:
         return
 
     items_list = ""
@@ -58,13 +105,14 @@ def notify_owner_new_order(order):
         f"<b>ស្ថានភាពទូទាត់:</b> {order.get_payment_status_display()}\n"
         f"<b>ស្ថានភាព:</b> {order.get_status_display()}"
     )
-    send_telegram_message(owner_chat_id, msg)
+    for cid in chat_ids:
+        send_telegram_message(cid, msg)
 
 
 def notify_owner_payment_received(order, amount_usd, method):
     """Notify store owner when payment is recorded."""
-    owner_chat_id = getattr(settings, 'TELEGRAM_OWNER_CHAT_ID', '')
-    if not owner_chat_id:
+    chat_ids = get_all_recipient_chat_ids()
+    if not chat_ids:
         return
 
     amount_khr = int(amount_usd * order.exchange_rate)
@@ -77,13 +125,14 @@ def notify_owner_payment_received(order, amount_usd, method):
         f"<b>នៅខ្វះ (Balance Due):</b> ${order.balance_due_usd:.2f} ({order.balance_due_khr:,} ៛)\n"
         f"<b>ស្ថានភាពបច្ចុប្បន្ន:</b> {order.get_payment_status_display()}"
     )
-    send_telegram_message(owner_chat_id, msg)
+    for cid in chat_ids:
+        send_telegram_message(cid, msg)
 
 
 def notify_customer_order_ready(order):
-    """Notify owner & optionally customer when laundry order is ready for pickup."""
-    owner_chat_id = getattr(settings, 'TELEGRAM_OWNER_CHAT_ID', '')
-    if not owner_chat_id:
+    """Notify owner & customer when laundry order is ready for pickup."""
+    chat_ids = get_all_recipient_chat_ids()
+    if not chat_ids:
         return
 
     msg = (
@@ -95,4 +144,5 @@ def notify_customer_order_ready(order):
         f"<b>នៅខ្វះ:</b> ${order.balance_due_usd:.2f} ({order.balance_due_khr:,} ៛)\n"
         f"សូមរៀបចំទុកដាក់ជូនអតិថិជន!"
     )
-    send_telegram_message(owner_chat_id, msg)
+    for cid in chat_ids:
+        send_telegram_message(cid, msg)
